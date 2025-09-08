@@ -135,7 +135,7 @@ start_tls_listener(TLSConf0, CowboyOpts) ->
       num_acceptors => get_env(num_ssl_acceptors, 10),
       num_conns_sups => get_env(num_conns_sup, 1)
      },
-    case cowboy:start_tls(RanchRef, RanchTransportOpts, CowboyOpts) of
+    case cowboy:start_tls(RanchRef, RanchTransportOpts, CowboyOpts#{enable_connect_protocol => true}) of
         {ok, _} ->
             ok;
         {error, {already_started, _}} ->

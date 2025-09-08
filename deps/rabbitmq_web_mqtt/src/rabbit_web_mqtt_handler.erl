@@ -56,9 +56,25 @@
 upgrade(Req, Env, Handler, HandlerState) ->
     upgrade(Req, Env, Handler, HandlerState, #{}).
 
+%% We simulate PROXY headers when HTTP/2 is used to have src/dest.
+upgrade(Req=#{version := 'HTTP/2', peer := Peer, sock := Sock, cert := Cert},
+        Env, Handler, HandlerState, Opts) ->
+    logger:error("~p ~p ~p ~p ~p", [Req, Env, Handler, HandlerState, Opts]),
+    {SrcAddr, SrcPort} = Peer,
+    {DestAddr, DestPort} = Sock,
+    SocketInfo = #{
+        src_address => SrcAddr,
+        src_port => SrcPort,
+        dest_address => DestAddr,
+        dest_port => DestPort,
+        cert => Cert
+    },
+    VirtualSocket = {rabbit_virtual_socket, SocketInfo},
+    cowboy_websocket:upgrade(Req, Env, Handler, HandlerState#state{socket = VirtualSocket}, Opts);
 upgrade(Req, Env, Handler, HandlerState, Opts) ->
     cowboy_websocket:upgrade(Req, Env, Handler, HandlerState, Opts).
 
+%% @todo This is only called for HTTP/1.1.
 takeover(Parent, Ref, Socket, Transport, Opts, Buffer, {Handler, HandlerState}) ->
     Sock = case HandlerState#state.socket of
                undefined ->
